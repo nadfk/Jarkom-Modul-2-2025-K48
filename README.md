@@ -329,3 +329,63 @@ Verifikasi akhir di Valmar
     host app.k48.com
 
 hasil harus konsisten 
+
+## Nomor 8
+
+```
+# Tirion
+
+nano /etc/bind/named.conf.local
+
+# Tambahkan blok ini di bawah konfigurasi zone "k48.com" Anda
+zone "3.235.192.in-addr.arpa" {
+    type master;
+    file "/etc/bind/db.192.235.3";   // Ini adalah file BARU yang akan kita buat
+    allow-transfer { 192.235.3.21; };   // Izinkan Valmar menyalin
+    also-notify { 192.235.3.21; };      // Beri tahu Valmar jika ada update
+};
+
+nano /etc/bind/db.192.235.3
+
+# isi code berikut
+$TTL    604800
+@       IN      SOA     tirion.k48.com. root.k48.com. (
+                      2025101303     ; Serial (PENTING: Naikkan angkanya!)
+                      604800         ; Refresh
+                      86400          ; Retry
+                      2419200        ; Expire
+                      604800 )       ; Negative Cache TTL
+;
+; Name Server Record
+@       IN      NS      tirion.k48.com.
+
+; --- Pointer (PTR) Records ---
+; [Oktet terakhir IP]   IN PTR   [Hostname.]
+2       IN      PTR     sirion.k48.com.
+10      IN      PTR     lindon.k48.com.
+11      IN      PTR     vingilot.k48.com.
+
+service bind9 restart
+
+# Valmar
+
+nano /etc/bind/named.conf.local
+
+# Tambahkan blok ini di Valmar
+zone "3.235.192.in-addr.arpa" {
+    type slave;
+    masters { 192.235.3.20; }; // Tentukan IP master (Tirion)
+    file "/var/lib/bind/db.192.235.3";
+};
+
+service bind9 restart
+
+# cek di client (ex Earendil)
+
+# Cek IP Sirion
+host 192.235.3.2
+# Cek IP Lindon
+host 192.235.3.10
+# Cek IP Vingilot
+host 192.235.3.11
+```
