@@ -315,9 +315,9 @@ Verifikasi akhir di Valmar
     vingilot    IN      A       192.235.3.11
     
     ; CNAME Aliases
-    www         IN      CNAME   sirion.<xxxx>.com.
-    static      IN      CNAME   lindon.<xxxx>.com.
-    app         IN      CNAME   vingilot.<xxxx>.com.
+    www         IN      CNAME   sirion.k48.com.
+    static      IN      CNAME   lindon.k48.com.
+    app         IN      CNAME   vingilot.k48.com.
 
     ubah serial dari 2025101301 menjadi 2025101302 
     
