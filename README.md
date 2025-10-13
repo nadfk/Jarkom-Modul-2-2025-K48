@@ -207,7 +207,7 @@
     nano /etc/bind/named.conf.local
     zone "K48.com" {
         type slave;
-        file "db.K48.com";
+        file "var/lib/bind/db.K48.com";
         masters { 192.235.3.20; }; 
     };
     
@@ -285,11 +285,22 @@
     dig @192.235.3.20 k48.com SOA
     
     #valmar
+    ls -l /var/lib/bind #cek ada file db.K48.com
     
     dig @192.235.3.21 k48.com SOA
     
     #cocokan answer section for SOA
 
+untuk lacak log Valmar
+    ```
+    apt update && apt install journalctl -y
+    journalctl -xeu bind9 | grep transfer
+    ```
+Verifikasi akhir di Valmar
+    ```
+    dig @127.0.0.1 K48.com
+    dig @127.0.0.1 eonwe.K48.com
+    ```
 ## Nomor 7
 
     #tirion
@@ -307,12 +318,14 @@
     www         IN      CNAME   sirion.<xxxx>.com.
     static      IN      CNAME   lindon.<xxxx>.com.
     app         IN      CNAME   vingilot.<xxxx>.com.
-    
+
     ubah serial dari 2025101301 menjadi 2025101302 
     
     systemctl restart bind9
     
-    # cek pada klien (ex earendil)
+    # cek pada dua klien berbeda (ex earendil)
     host www.k48.com
     host static.k48.com
     host app.k48.com
+
+hasil harus konsisten 
