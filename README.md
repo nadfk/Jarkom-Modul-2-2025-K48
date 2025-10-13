@@ -292,15 +292,15 @@
     #cocokan answer section for SOA
 
 untuk lacak log Valmar
-    ``
-    apt update && apt install journalctl -y
-    journalctl -xeu bind9 | grep transfer
-    ``
+```
+apt update && apt install journalctl -y
+journalctl -xeu bind9 | grep transfer
+```
 Verifikasi akhir di Valmar
-    ``
-    dig @127.0.0.1 K48.com
-    dig @127.0.0.1 eonwe.K48.com
-    ``
+```
+dig @127.0.0.1 K48.com
+dig @127.0.0.1 eonwe.K48.com
+```
 ## Nomor 7
 
     #tirion
