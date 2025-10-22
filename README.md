@@ -220,7 +220,6 @@ Tirion
 cek di Tirion
 
     named-checkzone K48.com /etc/bind/db.K48.com
-    named-checkconf
     systemctl restart bind9
     systemctl status bind9
     
@@ -247,7 +246,6 @@ Valmar
         masters { 192.235.3.20; }; 
     };
     
-    named-checkconf
     systemctl restart bind9
     systemctl status bind9
 
@@ -432,63 +430,69 @@ Pada soal ini, kita diminta untuk membuat dan mengonfigurasi reverse DNS zone di
 
 Sebagai tahap akhir, kita harus memverifikasi bahwa query reverse lookup untuk ketiga alamat IP tersebut dijawab secara authoritative oleh server DNS, baik dari Tirion maupun Valmar, yang menandakan bahwa konfigurasi reverse DNS sudah berjalan dengan benar dan sinkron.
 
-```
-# Tirion
 
-nano /etc/bind/named.conf.local
+Terminal Tirion
 
-# Tambahkan blok ini di bawah konfigurasi zone "k48.com" Anda
-zone "3.235.192.in-addr.arpa" {
+    nano /etc/bind/named.conf.local
+
+Tambahkan blok ini di bawah konfigurasi zone "k48.com" Anda
+
+    zone "3.235.192.in-addr.arpa" {
     type master;
     file "/etc/bind/db.192.235.3";   // Ini adalah file BARU yang akan kita buat
     allow-transfer { 192.235.3.21; };   // Izinkan Valmar menyalin
     also-notify { 192.235.3.21; };      // Beri tahu Valmar jika ada update
-};
+    };
 
-nano /etc/bind/db.192.235.3
+Buka file db
 
-# isi code berikut
-$TTL    604800
-@       IN      SOA     tirion.k48.com. root.k48.com. (
-                      2025101303     ; Serial (PENTING: Naikkan angkanya!)
-                      604800         ; Refresh
-                      86400          ; Retry
-                      2419200        ; Expire
-                      604800 )       ; Negative Cache TTL
-;
-; Name Server Record
-@       IN      NS      tirion.k48.com.
+    nano /etc/bind/db.192.235.3
 
-; --- Pointer (PTR) Records ---
-; [Oktet terakhir IP]   IN PTR   [Hostname.]
-2       IN      PTR     sirion.k48.com.
-10      IN      PTR     lindon.k48.com.
-11      IN      PTR     vingilot.k48.com.
+isi code berikut
 
-service bind9 restart
+    $TTL    604800
+    @       IN      SOA     tirion.k48.com. root.k48.com. (
+                          2025101303     ; Serial (PENTING: Naikkan angkanya!)
+                          604800         ; Refresh
+                          86400          ; Retry
+                          2419200        ; Expire
+                          604800 )       ; Negative Cache TTL
+    ;
+    ; Name Server Record
+    @       IN      NS      tirion.k48.com.
+    
+    ; --- Pointer (PTR) Records ---
+    ; [Oktet terakhir IP]   IN PTR   [Hostname.]
+    2       IN      PTR     sirion.k48.com.
+    10      IN      PTR     lindon.k48.com.
+    11      IN      PTR     vingilot.k48.com.
 
-# Valmar
+Restart bind9
 
-nano /etc/bind/named.conf.local
+    service bind9 restart
 
-# Tambahkan blok ini di Valmar
-zone "3.235.192.in-addr.arpa" {
-    type slave;
-    masters { 192.235.3.20; }; // Tentukan IP master (Tirion)
-    file "/var/lib/bind/db.192.235.3";
-};
+Terminal Valmar
 
-service bind9 restart
+    nano /etc/bind/named.conf.local
 
-# cek di client (ex Earendil)
+Tambahkan blok ini di Valmar
 
-# Cek IP Sirion
-host 192.235.3.2
-# Cek IP Lindon
-host 192.235.3.10
-# Cek IP Vingilot
-host 192.235.3.11
-```
+    zone "3.235.192.in-addr.arpa" {
+        type slave;
+        masters { 192.235.3.20; }; // Tentukan IP master (Tirion)
+        file "/var/lib/bind/db.192.235.3";
+    };
+    
+    service bind9 restart
+
+cek di client (ex Earendil)
+
+    # Cek IP Sirion
+    host 192.235.3.2
+    # Cek IP Lindon
+    host 192.235.3.10
+    # Cek IP Vingilot
+    host 192.235.3.11
 
 ![](./src/no8.png)
 
@@ -498,57 +502,60 @@ Pada soal ini, kita diminta untuk menjalankan layanan web statis pada hostname s
 
 Selain itu, akses ke web harus dilakukan melalui hostname static.K48.com, bukan menggunakan alamat IP, sehingga konfigurasi DNS dan virtual host harus sudah mendukung resolusi nama tersebut.
 
-```
-# Akses di client Lindon
 
-apt-get update -y
-apt-get install -y nginx
+Akses di client Lindon
 
-mkdir -p /var/www/static/annals
+    apt-get update -y
+    apt-get install -y nginx
 
-cat > /var/www/static/index.html << 'HTML'
-<!doctype html>
-<title>Lampion Lindon</title>
-<h1>Selamat Datang di Pelabuhan Statis Lindon</h1>
-<p>Akses <a href="/annals/">/annals/</a> untuk melihat arsip.</p>
-HTML
+    mkdir -p /var/www/static/annals
 
-cat > /var/www/static/annals/catatan_pelayaran.txt << 'TXT'
-Ini adalah arsip dari Pelabuhan Lindon.
-Directory listing (autoindex) aktif.
-TXT
-
-cat > /etc/nginx/sites-available/static.conf << 'NGINX'
-server {
-    listen 80;
-    server_name static.k48.com;
-    root /var/www/static;
-    index index.html;
-
-    location /annals/ {
-        autoindex on;
+    cat > /var/www/static/index.html << 'HTML'
+    <!doctype html>
+    <title>Lampion Lindon</title>
+    <h1>Selamat Datang di Pelabuhan Statis Lindon</h1>
+    <p>Akses <a href="/annals/">/annals/</a> untuk melihat arsip.</p>
+    HTML
+    
+    cat > /var/www/static/annals/catatan_pelayaran.txt << 'TXT'
+    Ini adalah arsip dari Pelabuhan Lindon.
+    Directory listing (autoindex) aktif.
+    TXT
+    
+    cat > /etc/nginx/sites-available/static.conf << 'NGINX'
+    server {
+        listen 80;
+        server_name static.k48.com;
+        root /var/www/static;
+        index index.html;
+    
+        location /annals/ {
+            autoindex on;
+        }
     }
-}
-NGINX
+    NGINX
 
-# Membuat symbolic link untuk mengaktifkan situs
-ln -sf /etc/nginx/sites-available/static.conf /etc/nginx/sites-enabled/static.conf
+Membuat symbolic link untuk mengaktifkan situs
 
-# Menghapus konfigurasi default jika ada
-rm -f /etc/nginx/sites-enabled/default
+    ln -sf /etc/nginx/sites-available/static.conf /etc/nginx/sites-enabled/static.conf
 
-# Memeriksa sintaks konfigurasi
-nginx -t
+Menghapus konfigurasi default jika ada
 
-# Memulai ulang layanan Nginx
-service nginx restart
+    rm -f /etc/nginx/sites-enabled/default
 
+Memeriksa sintaks konfigurasi
 
-# Testing di client (ex Earendil)
-apt update && apt install lynx -y
-lynx http://static.k48.com
-lynx http://static.k48.com/annals/
-```
+    nginx -t
+
+Memulai ulang layanan Nginx
+
+    service nginx restart
+
+Testing di client (ex Earendil)
+
+    apt update && apt install lynx -y
+    lynx http://static.k48.com
+    lynx http://static.k48.com/annals/
 
 ![](./src/no9.1.png)
 ![](./src/no9.2.png)
@@ -559,77 +566,83 @@ Pada soal ini, kita diminta untuk menjalankan layanan web dinamis berbasis PHP-F
 
 Selain itu, seluruh akses ke situs harus dilakukan melalui hostname app.K48.com, bukan menggunakan alamat IP, sehingga konfigurasi DNS dan virtual host harus mendukung resolusi nama tersebut sepenuhnya.
 
-```
-# Akses melalui Vingilot
+Akses melalui Vingilot
 
-apt-get update -y
-apt-get install -y nginx php8.4-fpm
+    apt-get update -y
+    apt-get install -y nginx php8.4-fpm
 
-# Membuat direktori root untuk web
-mkdir -p /var/www/app
+Membuat direktori root untuk web
 
-# Membuat file index.php (beranda)
-cat > /var/www/app/index.php <<'PHP'
-<?php
-echo "<h1>Vingilot Mengarungi Samudera Digital!</h1>";
-echo "<p>Ini adalah halaman utama yang dinamis.</p>";
-?>
-PHP
+    mkdir -p /var/www/app
 
-# Membuat file about.php (halaman tentang)
-cat > /var/www/app/about.php <<'PHP'
-<?php
-echo "<h2>Kisah Sang Navigator, Vingilot</h2>";
-echo "<p>Halaman ini diakses melalui rewrite URL.</p>";
-?>
-PHP
+Membuat file index.php (beranda)
 
-cat > /etc/nginx/sites-available/app.conf <<'NGINX'
-server {
-    listen 80;
-    server_name app.k48.com;
+    cat > /var/www/app/index.php <<'PHP'
+    <?php
+    echo "<h1>Vingilot Mengarungi Samudera Digital!</h1>";
+    echo "<p>Ini adalah halaman utama yang dinamis.</p>";
+    ?>
+    PHP
 
-    root /var/www/app;
-    index index.php;
+Membuat file about.php (halaman tentang)
 
-    # Blok untuk URL rewrite /about
-    location = /about {
-        return 301 /about/; # Menambahkan trailing slash
+    cat > /var/www/app/about.php <<'PHP'
+    <?php
+    echo "<h2>Kisah Sang Navigator, Vingilot</h2>";
+    echo "<p>Halaman ini diakses melalui rewrite URL.</p>";
+    ?>
+    PHP
+
+    cat > /etc/nginx/sites-available/app.conf <<'NGINX'
+        server {
+            listen 80;
+            server_name app.k48.com;
+        
+            root /var/www/app;
+            index index.php;
+    
+        # Blok untuk URL rewrite /about
+        location = /about {
+            return 301 /about/; # Menambahkan trailing slash
+        }
+        location = /about/ {
+            rewrite ^ /about.php last; # Menyajikan about.php tanpa mengubah URL
+        }
+    
+        # Aturan umum untuk file dan direktori
+        location / {
+            try_files $uri $uri/ /index.php?$args;
+        }
+    
+        # Meneruskan semua file .php ke PHP-FPM untuk diproses
+        location ~ \.php$ {
+            include snippets/fastcgi-php.conf;
+            fastcgi_pass unix:/run/php/php8.4-fpm.sock; # Jembatan ke PHP
+        }
     }
-    location = /about/ {
-        rewrite ^ /about.php last; # Menyajikan about.php tanpa mengubah URL
-    }
+    NGINX
 
-    # Aturan umum untuk file dan direktori
-    location / {
-        try_files $uri $uri/ /index.php?$args;
-    }
+Mengaktifkan situs baru
 
-    # Meneruskan semua file .php ke PHP-FPM untuk diproses
-    location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/run/php/php8.4-fpm.sock; # Jembatan ke PHP
-    }
-}
-NGINX
+    ln -sf /etc/nginx/sites-available/app.conf /etc/nginx/sites-enabled/app.conf
 
-# Mengaktifkan situs baru
-ln -sf /etc/nginx/sites-available/app.conf /etc/nginx/sites-enabled/app.conf
+Menghapus konfigurasi default
+    
+    rm -f /etc/nginx/sites-enabled/default
 
-# Menghapus konfigurasi default
-rm -f /etc/nginx/sites-enabled/default
+Memeriksa sintaks konfigurasi
 
-# Memeriksa sintaks konfigurasi
-nginx -t
+    nginx -t
 
-# Memulai ulang layanan PHP-FPM dan Nginx
-service php8.4-fpm start || service php-fpm start
-service nginx restart
+Memulai ulang layanan PHP-FPM dan Nginx
 
-# Verifikasi di client(ex Earendil)
-lynx http://app.k48.com
-lynx http://app.k48.com/about
-```
+    service php8.4-fpm start || service php-fpm start
+    service nginx restart
+
+Verifikasi di client(ex Earendil)
+
+    lynx http://app.k48.com
+    lynx http://app.k48.com/about
 
 ![](./src/no10.1.png)
 ![](./src/no10.2.png)
@@ -646,62 +659,65 @@ Selain itu, proxy harus meneruskan header Host dan X-Real-IP ke backend agar ser
 
 Sirion juga harus dapat menerima permintaan melalui dua hostname, yaitu www.K48.com (kanonik) dan sirion.K48.com, serta memastikan bahwa setiap permintaan ke /static dan /app benar-benar diteruskan dan disajikan oleh backend yang sesuai.
 
-```
-# Akses melalui Sirion
 
-apt-get update -y
-apt-get install -y nginx
+Akses melalui Sirion
 
-echo "192.235.3.10 lindon.k48.com" >> /etc/hosts
-echo "192.235.3.11 vingilot.k48.com" >> /etc/hosts
+    apt-get update -y
+    apt-get install -y nginx
 
-cat > /etc/nginx/sites-available/reverse-proxy.conf <<'NGINX'
-server {
-    listen 80;
-    # Menerima permintaan untuk kedua hostname
-    server_name www.k48.com sirion.k48.com;
+    echo "192.235.3.10 lindon.k48.com" >> /etc/hosts
+    echo "192.235.3.11 vingilot.k48.com" >> /etc/hosts
 
-    # Aturan untuk /static/
-    location /static/ {
-        # Teruskan permintaan ke Lindon
-        proxy_pass http://lindon.k48.com/;
-
-        # Meneruskan header asli dari klien
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    cat > /etc/nginx/sites-available/reverse-proxy.conf <<'NGINX'
+    server {
+        listen 80;
+        # Menerima permintaan untuk kedua hostname
+        server_name www.k48.com sirion.k48.com;
+    
+        # Aturan untuk /static/
+        location /static/ {
+            # Teruskan permintaan ke Lindon
+            proxy_pass http://lindon.k48.com/;
+    
+            # Meneruskan header asli dari klien
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+    
+        # Aturan untuk /app/
+        location /app/ {
+            # Teruskan permintaan ke Vingilot
+            proxy_pass http://vingilot.k48.com/;
+    
+            # Meneruskan header asli dari klien
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
     }
+    NGINX
 
-    # Aturan untuk /app/
-    location /app/ {
-        # Teruskan permintaan ke Vingilot
-        proxy_pass http://vingilot.k48.com/;
+Mengaktifkan situs reverse proxy
 
-        # Meneruskan header asli dari klien
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
-NGINX
+    ln -sf /etc/nginx/sites-available/reverse-proxy.conf /etc/nginx/sites-enabled/reverse-proxy.conf
 
-# Mengaktifkan situs reverse proxy
-ln -sf /etc/nginx/sites-available/reverse-proxy.conf /etc/nginx/sites-enabled/reverse-proxy.conf
+Menghapus konfigurasi default
 
-# Menghapus konfigurasi default
-rm -f /etc/nginx/sites-enabled/default
+    rm -f /etc/nginx/sites-enabled/default
 
-# Memeriksa sintaks konfigurasi
-nginx -t
+Memeriksa sintaks konfigurasi
 
-# Memulai ulang layanan Nginx
-service nginx restart
+    nginx -t
 
+Memulai ulang layanan Nginx
 
-# Verifikasi di client (ex Earendil)
-lynx http://www.k48.com/static/
-lynx http://www.k48.com/app/
-```
+    service nginx restart
+
+Verifikasi di client (ex Earendil)
+
+    lynx http://www.k48.com/static/
+    lynx http://www.k48.com/app/
 
 ![](./src/no11.png)
 ![](./src/no11.2.png)
